@@ -30,25 +30,18 @@ jobs:
       - name: Crawl
         run: job35 run --companies directory/data/companies.yaml --out directory/data/signals
 
-      # 阶段一（无 PAT 时）：把结果作为 artifact 留存
-      - uses: actions/upload-artifact@v4
-        with:
-          name: crawl-results
-          path: directory/data/signals
-
-      # 阶段二（可选）：把结果推回名录仓库，自动开 PR。
-      # 需要 DIRECTORY_TOKEN 同时具备 job35-directory 的 contents:write 与 pull_requests:write。
-      # - name: Open PR to directory repo
-      #   working-directory: directory
-      #   run: |
-      #     git config user.name "job35-bot"
-      #     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      #     git checkout -b "crawl/$(date -u +%Y%m%d)"
-      #     git add data/signals
-      #     git commit -m "chore: weekly crawl results $(date -u +%F)"
-      #     git push -u origin "HEAD:crawl/$(date -u +%Y%m%d)"
-      #     gh pr create --repo MaxLiu1979/job35-directory \
-      #       --title "Weekly crawl $(date -u +%F)" \
-      #       --body "Automated crawl results. Review evidence before merging."
-      #   env:
-      #     GH_TOKEN: ${{ secrets.DIRECTORY_TOKEN }}
+      - name: Open PR to directory repo
+        working-directory: directory
+        env:
+          GH_TOKEN: ${{ secrets.DIRECTORY_TOKEN }}
+        run: |
+          git config user.name "job35-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="crawl/$(date -u +%Y%m%d)"
+          git checkout -b "$branch"
+          git add data/signals
+          git commit -m "chore: weekly crawl results $(date -u +%F)" || exit 0
+          git push -u origin "HEAD:$branch"
+          gh pr create --repo MaxLiu1979/job35-directory \
+            --title "Weekly crawl $(date -u +%F)" \
+            --body "Automated crawl results. Review evidence before merging."
