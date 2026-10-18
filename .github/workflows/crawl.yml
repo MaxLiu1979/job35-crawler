@@ -1,0 +1,54 @@
+name: weekly-crawl
+
+on:
+  schedule:
+    - cron: "23 3 * * 1"   # 每周一 03:23 UTC（避开整点 herd）
+  workflow_dispatch:
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: crawler
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e crawler
+
+      # 拉取名录仓库。需要配置 secret：DIRECTORY_TOKEN（对 job35-directory 有读权限的 PAT）
+      - uses: actions/checkout@v4
+        with:
+          repository: MaxLiu1979/job35-directory
+          token: ${{ secrets.DIRECTORY_TOKEN }}
+          path: directory
+
+      - name: Crawl
+        run: job35 run --companies directory/data/companies.yaml --out directory/data/signals
+
+      # 阶段一（无 PAT 时）：把结果作为 artifact 留存
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crawl-results
+          path: directory/data/signals
+
+      # 阶段二（可选）：把结果推回名录仓库，自动开 PR。
+      # 需要 DIRECTORY_TOKEN 同时具备 job35-directory 的 contents:write 与 pull_requests:write。
+      # - name: Open PR to directory repo
+      #   working-directory: directory
+      #   run: |
+      #     git config user.name "job35-bot"
+      #     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      #     git checkout -b "crawl/$(date -u +%Y%m%d)"
+      #     git add data/signals
+      #     git commit -m "chore: weekly crawl results $(date -u +%F)"
+      #     git push -u origin "HEAD:crawl/$(date -u +%Y%m%d)"
+      #     gh pr create --repo MaxLiu1979/job35-directory \
+      #       --title "Weekly crawl $(date -u +%F)" \
+      #       --body "Automated crawl results. Review evidence before merging."
+      #   env:
+      #     GH_TOKEN: ${{ secrets.DIRECTORY_TOKEN }}

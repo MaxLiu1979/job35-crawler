@@ -1,0 +1,21 @@
+# 独立使用 job35-crawler 时的示例配置。
+# 字段定义与名录仓库 data/companies.yaml 完全一致。
+version: 1
+companies:
+  - id: example-001
+    name: 示例公司
+    name_en: Example Inc.
+    industry: internet
+    tier: candidate          # top10 | top50 | top100 | candidate
+    country: US
+    sources:
+      - type: greenhouse
+        slug: example        # https://boards.greenhouse.io/example
+      - type: lever
+        slug: example        # https://jobs.lever.co/example
+      - type: careers_page
+        url: https://example.com/careers
+      - type: rss
+        url: https://example.com/careers.xml
+    status: pending          # pending | active | verified | stale
+    note: 示例条目，仅演示字段结构，请在替换为真实企业后删除本行
